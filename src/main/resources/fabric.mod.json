@@ -1,31 +1,31 @@
 {
 	"schemaVersion": 1,
-	"id": "xtr-build-protection",
+	"id": "xtr_build_protection",
 	"version": "${version}",
-	"name": "xtr-build-protection",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "xtr_build_protection",
+	"description": "This standalone mod allows you to precisely configure blocks and areas, that are protected from destruction in certain ways.",
 	"authors": [
-		"Me!"
+		"Textra"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/T3xtra/xtr_build_protection"
 	},
-	"license": "CC0-1.0",
-	"icon": "assets/xtr-build-protection/icon.png",
+	"license": "MIT",
+	"icon": "assets/xtr_build_protection/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"xtr.buildprot.Xtrbuildprotection"
+			"xtr.buildprot.XtrBuildProtection"
 		],
 		"client": [
-			"xtr.buildprot.XtrbuildprotectionClient"
+			"xtr.buildprot.XtrBuildProtectionClient"
 		]
 	},
 	"mixins": [
-		"xtr-build-protection.mixins.json",
+		"xtr_build_protection.mixins.json",
 		{
-			"config": "xtr-build-protection.client.mixins.json",
+			"config": "xtr_build_protection.client.mixins.json",
 			"environment": "client"
 		}
 	],

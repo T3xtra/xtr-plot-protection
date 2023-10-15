@@ -22,7 +22,7 @@ loom {
     splitEnvironmentSourceSets()
 
 	mods {
-		"xtr-build-protection" {
+		"xtr_build_protection" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}

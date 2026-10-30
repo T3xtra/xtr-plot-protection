@@ -1,0 +1,20 @@
+{
+	"schemaVersion": 1,
+	"id": "xtr_plot_protection_gametest",
+	"version": "1.0.0",
+	"name": "XTR Plot Protection GameTests",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-gametest": [
+			"xtr.plotprotection.gametest.MarkerAndBookTest",
+			"xtr.plotprotection.gametest.PlayerProtectionTest",
+			"xtr.plotprotection.gametest.IndirectProtectionTest",
+			"xtr.plotprotection.gametest.MixinTargetsTest",
+			"xtr.plotprotection.gametest.RegenerationTest",
+			"xtr.plotprotection.gametest.EntityProtectionTest"
+		]
+	},
+	"depends": {
+		"xtr_plot_protection": "*"
+	}
+}

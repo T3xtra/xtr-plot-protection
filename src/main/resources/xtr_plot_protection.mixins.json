@@ -1,0 +1,29 @@
+{
+	"required": true,
+	"package": "xtr.plotprotection.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"AbstractContainerMenuMixin",
+		"BreakDoorGoalMixin",
+		"CachedUserNameToIdResolverAccessor",
+		"CompoundContainerAccessor",
+		"DecorationHurtMixin",
+		"DispenserBlockMixin",
+		"EndermanLeaveBlockGoalMixin",
+		"EndermanTakeBlockGoalMixin",
+		"EntityMixin",
+		"FarmlandBlockMixin",
+		"FireBlockMixin",
+		"FishingHookMixin",
+		"FlowingFluidMixin",
+		"HopperBlockEntityMixin",
+		"LavaFluidMixin",
+		"LevelMixin",
+		"PistonStructureResolverMixin",
+		"ServerExplosionMixin",
+		"ServerGamePacketListenerImplMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

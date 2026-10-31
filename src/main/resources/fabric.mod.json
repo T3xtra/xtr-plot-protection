@@ -1,41 +1,27 @@
 {
 	"schemaVersion": 1,
-	"id": "xtr_build_protection",
+	"id": "xtr_plot_protection",
 	"version": "${version}",
-	"name": "xtr_build_protection",
-	"description": "This standalone mod allows you to precisely configure blocks and areas, that are protected from destruction in certain ways.",
+	"name": "XTR Plot Protection",
+	"description": "Server-side plot management with lodestone markers, group books and protection modes.",
 	"authors": [
 		"Textra"
 	],
-	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/T3xtra/xtr_build_protection"
-	},
 	"license": "MIT",
-	"icon": "assets/xtr_build_protection/icon.png",
+	"icon": "assets/xtr_plot_protection/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"xtr.buildprot.XtrBuildProtection"
-		],
-		"client": [
-			"xtr.buildprot.XtrBuildProtectionClient"
+			"xtr.plotprotection.PlotProtectionMod"
 		]
 	},
-	"mixins": [
-		"xtr_build_protection.mixins.json",
-		{
-			"config": "xtr_build_protection.client.mixins.json",
-			"environment": "client"
-		}
-	],
 	"depends": {
-		"fabricloader": ">=0.14.23",
-		"minecraft": "~1.20.2",
-		"java": ">=17",
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
 		"fabric-api": "*"
 	},
-	"suggests": {
-		"another-mod": "*"
-	}
+	"mixins": [
+		"xtr_plot_protection.mixins.json"
+	]
 }

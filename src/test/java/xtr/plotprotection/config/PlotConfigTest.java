@@ -1,6 +1,7 @@
 package xtr.plotprotection.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
@@ -28,6 +29,14 @@ class PlotConfigTest {
 		assertEquals(7, config.heightBelowMarker());
 		assertEquals(PlotConfig.DEFAULTS.regenerationDelaySeconds(), config.regenerationDelaySeconds());
 		assertEquals(config, PlotConfig.load(file), "defaults were written back");
+	}
+
+	@Test
+	void savedTimingsSurviveReload() throws IOException {
+		var file = dir.resolve("config.json");
+		PlotConfig.load(file).withTimings(60, 120, 5, 3).save(file);
+		assertEquals(PlotConfig.DEFAULTS.withTimings(60, 120, 5, 3), PlotConfig.load(file));
+		assertFalse(PlotConfig.DEFAULTS.withTimings(0, 120, 5, 3).isValid());
 	}
 
 	@Test

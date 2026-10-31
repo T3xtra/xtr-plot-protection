@@ -74,9 +74,9 @@ Status: ✅ done · 🟡 partly done (missing part noted) · ⬜ open. Keep thes
 1. ✅ Particle outlines for Book and Quill holders. — `domain/BoundsOutline` (unit tests), `visual/BoundsView` (smoke GameTest; particles not checked on a real client)
 
 ## Phase 8 – Hardening and release
-1. 🟡 Complete test plan. — 62 unit tests, 25 GameTests (`./gradlew build`); manual acceptance (TEST_PLAN §5: real clients, singleplayer, restart with running timers) not done
+1. 🟡 Complete test plan. — 66 unit tests, 26 GameTests (`./gradlew build`); manual acceptance (TEST_PLAN §5: real clients, singleplayer, restart with running timers) not done
 2. ⬜ Load/performance tests and controlled regeneration batches. — batches are limited (`regenerationBlocksPerTick`); plot lookups are linear scans (`WorldData`), no load test yet
-3. ✅ Backup/recovery test with corrupt files. — `WorldDataStoreTest` incl. v1→v2 migration with backup
+3. ✅ Backup/recovery test with corrupt files. — `WorldDataStoreTest` incl. v1→v2 and v2→v3 migrations with backup
 4. ✅ README with installation, configuration, commands and known limitations.
 5. 🟡 Meet the release gate from `TEST_PLAN.md`. — see below
 6. 🟡 Leave no open security-critical points unchecked. — known limits are listed in `ARCHITECTURE.md`

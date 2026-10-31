@@ -27,6 +27,18 @@ class RegenerationTest {
 	}
 
 	@Test
+	void restoreTimesAreAscendingWithinTheSpread() {
+		long[] times = Regeneration.restoreTimes(50, 1000, 20_000, new java.util.Random(1));
+		assertEquals(50, times.length);
+		for (int i = 0; i < times.length; i++) {
+			assertTrue(times[i] >= 1000 && times[i] <= 21_000);
+			assertTrue(i == 0 || times[i - 1] <= times[i]);
+		}
+		assertTrue(times[times.length - 1] > times[0], "times are spread, not identical");
+		assertEquals(List.of(1000L, 1000L), java.util.Arrays.stream(Regeneration.restoreTimes(2, 1000, 0, new java.util.Random(1))).boxed().toList());
+	}
+
+	@Test
 	void dueEntriesAreOldestFirstAndLimited() {
 		var data = Regeneration.capture(WorldData.EMPTY, List.of(snapshot(b, "stone", 200), snapshot(a, "stone", 100), snapshot(new BlockPosition(3, 64, 1), "stone", 900)));
 		assertEquals(List.of(), Regeneration.due(data, 50, 10));

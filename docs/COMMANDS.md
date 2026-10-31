@@ -2,16 +2,18 @@
 
 All commands run server-side and are available to every player (OP level 0). Acting on a group the player does not own requires OP level 3 (admin), checked inside the command; no custom permission engine.
 
-`<group>` accepts the stable group ID or the group name (quote names with spaces). For normal players, names are matched only against their own groups. An ambiguous name is rejected with a list of matching IDs.
+`<group>` accepts the stable group ID or the group name (quote names with spaces). Tab completion suggests the groups the player may act on, already quoted where needed. For normal players, names are matched only against their own groups. An ambiguous name is rejected with a list of matching IDs.
 
 | Command | Normal player | OP level 3 |
 |---|---|---|
+| `/plot help` | yes | yes (also lists `/plot config`) |
 | `/plot list`, `/plot groups` | own data | own data |
 | `/plot create <name>` | yes | yes |
 | `/plot book [<group>]` | own groups only | any group |
 | `/plot set <group> …` | owner only | any group |
 | `/plot transfer <group> <player>` | owner only | any group (emergency) |
 | `/plot delete <group> [confirm]` | owner only | any group |
+| `/plot config [<key> <value>]` | no (hidden) | yes |
 
 ## 1. `/plot list`
 
@@ -89,7 +91,19 @@ Syntax: `/plot transfer <group> <player>`. The normal owner can transfer the gro
 
 Further admin commands may only be added if they are necessary and preserve the core invariants. An admin may create a replacement book for any group to restore a lost management interface. Marker coordinates from a command may only reference already registered markers; commands must not register markers by mere coordinate input.
 
-## 10. General command rules
+## 10. `/plot help`
+
+- Lists all commands with a one-line description (clicking a line puts the command into the chat), `/plot config` only for OP level 3, plus the hint to quote group names with spaces.
+- **Implemented.** Permission: OP level 0.
+
+## 11. `/plot config [<key> <value>]`
+
+- Without arguments: shows regeneration delay, spread, blocks per tick and the marker repair countdown.
+- Keys: `repairCountdownSeconds` (≥ 1), `regenerationDelaySeconds` (≥ 0), `regenerationSpreadSeconds` (≥ 0), `regenerationBlocksPerTick` (≥ 1). The value is written to `config/xtr_plot_protection.json` first, then used. New values apply to changes from then on; running countdowns and already scheduled blocks keep their time.
+- Works from the server console as well.
+- **Implemented.** Permission: OP level 3 (`Commands.LEVEL_ADMINS`); hidden from other players.
+
+## 12. General command rules
 
 - Validate every input server-side.
 - Never make a permission decision exclusively client-side.

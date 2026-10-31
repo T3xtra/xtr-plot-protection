@@ -21,7 +21,7 @@ Put the mod `.jar` (from the GitHub releases) together with Fabric API into the 
 5. Markers can only be mined while carrying the original book; a removed marker starts the repair countdown.
 6. While holding any Book and Quill, nearby plots are outlined with purple particles (the plot of the held original book in green); plots still being set up show columns at their registered markers. Only the holder sees them.
 
-All commands: `docs/COMMANDS.md`. Known limitations: `docs/ARCHITECTURE.md` (section "Known limits").
+All commands: `/plot help` in game or `docs/COMMANDS.md`. Known limitations: `docs/ARCHITECTURE.md` (section "Known limits").
 
 ## Development
 
@@ -42,12 +42,15 @@ Configuration: `config/xtr_plot_protection.json` (created with defaults on first
 | Key | Default | Meaning |
 |---|---|---|
 | `heightBelowMarker` / `heightAboveMarker` | 20 / 40 | default plot height around the markers |
-| `repairCountdownSeconds` | 86400 | time to replace a removed marker |
+| `repairCountdownSeconds` | 600 | time to replace a removed marker |
 | `backupCount` | 20 | number of rotating data backups |
-| `regenerationDelaySeconds` | 300 | time from a block's first unauthorized change to its restoration |
+| `regenerationDelaySeconds` | 120 | time from a block's first unauthorized change to its restoration |
+| `regenerationSpreadSeconds` | 60 | blocks changed together (e.g. by one explosion) reappear one after another within this window, lowest first |
 | `regenerationBlocksPerTick` | 20 | restoration batch limit |
 | `boundsViewRange` | 32 | distance up to which plot outlines are shown |
 | `boundsViewIntervalTicks` | 10 | how often plot outlines are redrawn |
+
+OPs (level 3) can change the repair countdown and the regeneration values in game with `/plot config <key> <value>` (saved to the file, applies to changes from then on); `/plot config` shows the current values. Regeneration times count game ticks (20 per second), so they follow `/tick rate|sprint|freeze` and pause while the server is offline; the repair countdown is real time.
 
 World data: `<world>/xtr_plot_protection/plots.json` plus `backups/`.
 

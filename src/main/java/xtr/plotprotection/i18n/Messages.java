@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,6 +41,22 @@ public final class Messages {
 
 	public static Translator forPlayer(ServerPlayer player) {
 		return forLocale(player.clientInformation().language());
+	}
+
+	/** Compact, language-neutral duration such as "24 h", "1 h 30 min" or "45 s". */
+	public static String duration(long seconds) {
+		long h = seconds / 3600, min = seconds % 3600 / 60, s = seconds % 60;
+		var parts = new ArrayList<String>();
+		if (h > 0) {
+			parts.add(h + " h");
+		}
+		if (min > 0) {
+			parts.add(min + " min");
+		}
+		if (s > 0 || parts.isEmpty()) {
+			parts.add(s + " s");
+		}
+		return String.join(" ", parts);
 	}
 
 	public static Translator forSource(CommandSourceStack source) {

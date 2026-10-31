@@ -47,14 +47,14 @@ Must the target owner already be a group member? Safe default in this specificat
 ### A10. Provisional defaults (please confirm)
 The following values are implemented but not specified:
 - Protection mode of new plots: `PROTECTED`, direct door opening: off.
-- Repair countdown: 86400 s (24 h); backup count: 20.
+- Repair countdown: 600 s (10 min), decided on 2026-10-31; changeable in game by OP level 3 via `/plot config`. Backup count: 20.
 - Plot and group names: 1–32 characters, not unique (ambiguity is resolved via the group ID).
 - Owner transfer: the previous owner remains a regular member.
 - A plot before its first complete marker registration has the status `SETUP` (protects nothing). Marker removal in this status does not start a countdown.
 - A plot with status `DISABLED` becomes `ACTIVE` again as soon as all four markers are re-registered with the original book. A replacement marker must have the same X/Z position as the missing one (Y may differ), because three corners already define the rectangle.
 - Overlap is checked three-dimensionally (including minY/maxY): plots of different owners stacked on top of each other are allowed.
 - `/plot delete` only works when the plot has no valid markers left (all removed, or never registered).
-- Regeneration: delay 300 s, 20 blocks per tick. Unauthorized fluid placement (buckets) in `REGENERATIVE` plots is refused rather than regenerated, because flowing fluids change blocks that were never snapshotted. Endermen never pick up blocks in `REGENERATIVE` plots (a regenerated carried block would be duplicated).
+- Regeneration: delay 120 s, 20 blocks per tick, spread 60 s (blocks of one change reappear one after another, lowest first); delay and spread decided on 2026-10-31. Regeneration timers count game ticks (follow `/tick`, pause while offline). OP level 3 can change these in game via `/plot config`. Unauthorized fluid placement (buckets) in `REGENERATIVE` plots is refused rather than regenerated, because flowing fluids change blocks that were never snapshotted. Endermen never pick up blocks in `REGENERATIVE` plots (a regenerated carried block would be duplicated).
 - Missing keys in the config file are filled with their defaults and written back (logged); unparseable files or invalid values still abort the start.
 - Copies of an original Book and Quill that are bit-identical (creative mode, dupes) cannot be told apart from the original; see `ARCHITECTURE.md` known limits.
 

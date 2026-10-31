@@ -20,6 +20,14 @@ class MessagesTest {
 	}
 
 	@Test
+	void formatsDurationsCompactly() {
+		assertEquals("10 min", Messages.duration(600));
+		assertEquals("24 h", Messages.duration(86_400));
+		assertEquals("1 h 30 min 5 s", Messages.duration(5405));
+		assertEquals("0 s", Messages.duration(0));
+	}
+
+	@Test
 	void fallsBackToRegionThenEnglishThenKey() {
 		assertEquals("Mitglied", Messages.forLocale("de_de").get("role.member"));
 		assertEquals("Mitglied", Messages.forLocale("de_AT").get("role.member"));

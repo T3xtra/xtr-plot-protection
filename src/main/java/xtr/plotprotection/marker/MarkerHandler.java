@@ -8,6 +8,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.protocol.game.ClientboundContainerClosePacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -72,6 +73,8 @@ public final class MarkerHandler {
 		} catch (PlotException e) {
 			player.sendSystemMessage(Component.literal(e.translate(t)).withStyle(ChatFormatting.RED));
 		}
+		// the vanilla client predicts the item use and opens the book screen; this closes it again
+		player.connection.send(new ClientboundContainerClosePacket(player.containerMenu.containerId));
 		return InteractionResult.SUCCESS_SERVER;
 	}
 
@@ -119,7 +122,7 @@ public final class MarkerHandler {
 			}
 			Translator t = Messages.forPlayer(recipient);
 			recipient.sendSystemMessage(plot.status() == PlotStatus.REPAIR_PENDING
-				? Component.literal(t.get("marker.removed_repair", plot.name(), position, runtime.config().repairCountdownSeconds() / 60)).withStyle(ChatFormatting.GOLD)
+				? Component.literal(t.get("marker.removed_repair", plot.name(), position, Messages.duration(runtime.config().repairCountdownSeconds()))).withStyle(ChatFormatting.GOLD)
 				: Component.literal(t.get("marker.removed", plot.name(), position)).withStyle(ChatFormatting.GOLD));
 		}
 		if (owner != null && removed.get().allMarkersMissing()) {

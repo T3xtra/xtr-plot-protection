@@ -127,9 +127,26 @@ class WorldDataStoreTest {
 		assertEquals(List.of(), store.current().regeneration());
 		assertEquals(sample.plots(), store.current().plots());
 		store.commit(store.current());
-		assertTrue(Files.readString(dir.resolve("plots.json")).contains("\"schemaVersion\": 2"));
+		assertTrue(Files.readString(dir.resolve("plots.json")).contains("\"schemaVersion\": " + WorldDataStore.SCHEMA_VERSION));
 		try (Stream<Path> files = Files.list(dir.resolve("backups"))) {
 			assertTrue(files.anyMatch(p -> readUnchecked(p).equals(v1)), "v1 file kept as backup");
+		}
+	}
+
+	@Test
+	void migratesVersionTwoWallClockTimesToImmediateRestoration() throws IOException {
+		var v2 = WorldDataStore.serialize(sample())
+			.replace("\"schemaVersion\": " + WorldDataStore.SCHEMA_VERSION, "\"schemaVersion\": 2")
+			.replace("\"restoreAt\": 10", "\"restoreAt\": 1793450000000");
+		Files.createDirectories(dir);
+		Files.writeString(dir.resolve("plots.json"), v2);
+
+		var store = WorldDataStore.open(dir, 5);
+		assertEquals(List.of(0L, 0L), store.current().regeneration().stream().map(RegenerationEntry::restoreAt).toList());
+		assertEquals("{id:\"minecraft:chest\",Items:[]}", store.current().regeneration().getFirst().blockEntity(), "snapshots kept");
+		store.commit(store.current());
+		try (Stream<Path> files = Files.list(dir.resolve("backups"))) {
+			assertTrue(files.anyMatch(p -> readUnchecked(p).equals(v2)), "v2 file kept as backup");
 		}
 	}
 

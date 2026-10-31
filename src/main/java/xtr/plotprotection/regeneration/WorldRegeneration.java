@@ -3,9 +3,12 @@ package xtr.plotprotection.regeneration;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.NbtUtils;
@@ -31,20 +34,34 @@ import xtr.plotprotection.marker.MarkerHandler;
 
 /** World side of regeneration: snapshots before unauthorized changes and restores them in batches. */
 public final class WorldRegeneration {
+	private static final int TICKS_PER_SECOND = 20;
+
 	private WorldRegeneration() {
 	}
 
-	/** Snapshots the blocks, including the other half of doors, beds and tall plants, before they change. */
+	/**
+	 * Snapshots the blocks, including the other half of doors, beds and tall plants, before they change. Blocks changed
+	 * together get staggered restore times, lowest first; both halves of a block share one time.
+	 */
 	public static void capture(PlotRuntime runtime, Level level, Collection<BlockPos> positions) {
-		long restoreAt = System.currentTimeMillis() + runtime.config().regenerationDelaySeconds() * 1000;
+		var config = runtime.config();
+		List<BlockPos> bottomUp = positions.stream().distinct().sorted(Comparator.comparingInt(BlockPos::getY)).toList();
+		long[] times = Regeneration.restoreTimes(bottomUp.size(), runtime.gameTime() + config.regenerationDelaySeconds() * TICKS_PER_SECOND,
+			config.regenerationSpreadSeconds() * TICKS_PER_SECOND, ThreadLocalRandom.current());
+		var restoreAt = new LinkedHashMap<BlockPos, Long>();
+		for (int i = 0; i < bottomUp.size(); i++) {
+			for (BlockPos pos : withPartners(level, List.of(bottomUp.get(i)))) {
+				restoreAt.putIfAbsent(pos, times[i]);
+			}
+		}
 		String dimension = MarkerHandler.dimension(level);
 		var data = runtime.data();
 		var snapshots = new ArrayList<RegenerationEntry>();
-		for (BlockPos pos : withPartners(level, positions)) {
+		restoreAt.forEach((pos, at) -> {
 			if (!Regeneration.isPending(data, dimension, MarkerHandler.position(pos))) {
-				snapshots.add(snapshot(level, dimension, pos, restoreAt));
+				snapshots.add(snapshot(level, dimension, pos, at));
 			}
-		}
+		});
 		runtime.commit(Regeneration.capture(data, snapshots));
 	}
 
@@ -71,7 +88,7 @@ public final class WorldRegeneration {
 
 	/** Restores due entries; called once per second with twenty ticks' worth of the configured batch. */
 	public static void restoreDue(PlotRuntime runtime, MinecraftServer server) {
-		var due = Regeneration.due(runtime.data(), System.currentTimeMillis(), runtime.config().regenerationBlocksPerTick() * 20);
+		var due = Regeneration.due(runtime.data(), runtime.gameTime(), runtime.config().regenerationBlocksPerTick() * 20);
 		if (due.isEmpty()) {
 			return;
 		}
@@ -87,7 +104,7 @@ public final class WorldRegeneration {
 				restored.add(entry);
 			} catch (RuntimeException | CommandSyntaxException e) {
 				PlotProtectionMod.LOGGER.error("Could not restore {} {}; keeping the snapshot and retrying later", entry.dimension(), entry.position(), e);
-				next = Regeneration.postpone(next, entry, System.currentTimeMillis() + runtime.config().regenerationDelaySeconds() * 1000);
+				next = Regeneration.postpone(next, entry, runtime.gameTime() + runtime.config().regenerationDelaySeconds() * TICKS_PER_SECOND);
 			}
 		}
 		try {

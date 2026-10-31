@@ -3,12 +3,19 @@ package xtr.plotprotection.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -22,6 +29,7 @@ import net.minecraft.server.level.ServerPlayer;
 import xtr.plotprotection.PlotProtectionMod;
 import xtr.plotprotection.PlotRuntime;
 import xtr.plotprotection.book.OriginalBooks;
+import xtr.plotprotection.config.PlotConfig;
 import xtr.plotprotection.domain.BookPages;
 import xtr.plotprotection.domain.Group;
 import xtr.plotprotection.domain.Plot;
@@ -38,14 +46,25 @@ public final class PlotCommands {
 
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
 		dispatcher.register(Commands.literal("plot")
+			.then(Commands.literal("help").executes(PlotCommands::help))
+			.then(Commands.literal("config").requires(Commands.hasPermission(Commands.LEVEL_ADMINS))
+				.executes(PlotCommands::showConfig)
+				.then(configValue("repairCountdownSeconds", 1,
+					(c, v) -> c.withTimings(v, c.regenerationDelaySeconds(), c.regenerationSpreadSeconds(), c.regenerationBlocksPerTick())))
+				.then(configValue("regenerationDelaySeconds", 0,
+					(c, v) -> c.withTimings(c.repairCountdownSeconds(), v, c.regenerationSpreadSeconds(), c.regenerationBlocksPerTick())))
+				.then(configValue("regenerationSpreadSeconds", 0,
+					(c, v) -> c.withTimings(c.repairCountdownSeconds(), c.regenerationDelaySeconds(), v, c.regenerationBlocksPerTick())))
+				.then(configValue("regenerationBlocksPerTick", 1,
+					(c, v) -> c.withTimings(c.repairCountdownSeconds(), c.regenerationDelaySeconds(), c.regenerationSpreadSeconds(), v))))
 			.then(Commands.literal("list").executes(ctx -> list(ctx, runtime().data())))
 			.then(Commands.literal("groups").executes(ctx -> groups(ctx, runtime().data())))
 			.then(Commands.literal("create").then(Commands.argument("name", StringArgumentType.greedyString())
 				.executes(ctx -> run(ctx, PlotCommands::create))))
 			.then(Commands.literal("book")
 				.executes(ctx -> run(ctx, PlotCommands::bookSelection))
-				.then(Commands.argument("group", StringArgumentType.string()).executes(ctx -> run(ctx, (c, rt, p, t) -> issueBook(c, rt, p, t, ownedGroup(c, rt, p))))))
-			.then(Commands.literal("set").then(Commands.argument("group", StringArgumentType.string())
+				.then(groupArgument().executes(ctx -> run(ctx, (c, rt, p, t) -> issueBook(c, rt, p, t, ownedGroup(c, rt, p))))))
+			.then(Commands.literal("set").then(groupArgument()
 				.then(Commands.literal("mode").then(Commands.argument("mode", StringArgumentType.word())
 					.suggests((c, b) -> SharedSuggestionProvider.suggest(Arrays.stream(ProtectionMode.values()).map(m -> m.name().toLowerCase(Locale.ROOT)), b))
 					.executes(ctx -> set(ctx, (rt, g, now) -> PlotService.setMode(rt.data(), g.plotId(), mode(ctx), now)))))
@@ -59,9 +78,9 @@ public final class PlotCommands {
 				.then(Commands.literal("heights").then(Commands.argument("minY", IntegerArgumentType.integer()).then(Commands.argument("maxY", IntegerArgumentType.integer())
 					.executes(ctx -> set(ctx, (rt, g, now) -> PlotService.setHeights(rt.data(), g.plotId(),
 						IntegerArgumentType.getInteger(ctx, "minY"), IntegerArgumentType.getInteger(ctx, "maxY"), now))))))))
-			.then(Commands.literal("transfer").then(Commands.argument("group", StringArgumentType.string()).then(Commands.argument("player", StringArgumentType.word())
+			.then(Commands.literal("transfer").then(groupArgument().then(Commands.argument("player", StringArgumentType.word())
 				.executes(ctx -> run(ctx, PlotCommands::transfer)))))
-			.then(Commands.literal("delete").then(Commands.argument("group", StringArgumentType.string())
+			.then(Commands.literal("delete").then(groupArgument()
 				.executes(ctx -> run(ctx, (c, rt, p, t) -> delete(c, rt, p, t, false)))
 				.then(Commands.literal("confirm").executes(ctx -> run(ctx, (c, rt, p, t) -> delete(c, rt, p, t, true)))))));
 	}
@@ -74,6 +93,65 @@ public final class PlotCommands {
 	@FunctionalInterface
 	private interface Change {
 		WorldData apply(PlotRuntime runtime, Group group, long now);
+	}
+
+	private static RequiredArgumentBuilder<CommandSourceStack, String> groupArgument() {
+		return Commands.argument("group", StringArgumentType.string()).suggests(PlotCommands::suggestGroups);
+	}
+
+	/** Suggests the groups the player may act on, already quoted when the name contains spaces. */
+	private static CompletableFuture<Suggestions> suggestGroups(CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {
+		ServerPlayer player = ctx.getSource().getPlayer();
+		if (player == null || runtime() == null) {
+			return builder.buildFuture();
+		}
+		boolean admin = PlotRuntime.isAdmin(player);
+		return SharedSuggestionProvider.suggest(runtime().data().groups().stream()
+			.filter(g -> admin || g.owner().equals(player.getUUID()))
+			.map(g -> StringArgumentType.escapeIfRequired(g.name())), builder);
+	}
+
+	private static LiteralArgumentBuilder<CommandSourceStack> configValue(String key, int min, BiFunction<PlotConfig, Integer, PlotConfig> change) {
+		return Commands.literal(key).then(Commands.argument("value", IntegerArgumentType.integer(min)).executes(ctx -> {
+			Translator t = Messages.forSource(ctx.getSource());
+			int value = IntegerArgumentType.getInteger(ctx, "value");
+			try {
+				runtime().updateConfig(change.apply(runtime().config(), value));
+			} catch (PlotException e) {
+				ctx.getSource().sendFailure(Component.literal(e.translate(t)));
+				return 0;
+			}
+			PlotProtectionMod.LOGGER.info("{} set {} to {}", ctx.getSource().getTextName(), key, value);
+			return reply(ctx, Component.literal(t.get("command.config.done", key, value)).withStyle(ChatFormatting.GREEN));
+		}));
+	}
+
+	private static int showConfig(CommandContext<CommandSourceStack> ctx) {
+		Translator t = Messages.forSource(ctx.getSource());
+		PlotConfig c = runtime().config();
+		return reply(ctx, Component.literal(t.get("command.config.show", Messages.duration(c.regenerationDelaySeconds()),
+			Messages.duration(c.regenerationSpreadSeconds()), c.regenerationBlocksPerTick(), Messages.duration(c.repairCountdownSeconds()))));
+	}
+
+	private static int help(CommandContext<CommandSourceStack> ctx) {
+		Translator t = Messages.forSource(ctx.getSource());
+		var out = Component.literal(t.get("command.help.header")).withStyle(ChatFormatting.BOLD);
+		var lines = new LinkedHashMap<String, String>();
+		lines.put("/plot list", "list");
+		lines.put("/plot groups", "groups");
+		lines.put("/plot create <name>", "create");
+		lines.put("/plot book [<group>]", "book");
+		lines.put("/plot set <group> mode|doors|name|groupname|heights …", "set");
+		lines.put("/plot transfer <group> <player>", "transfer");
+		lines.put("/plot delete <group>", "delete");
+		if (Commands.LEVEL_ADMINS.check(ctx.getSource().permissions())) {
+			lines.put("/plot config [<key> <value>]", "config");
+		}
+		lines.forEach((command, key) -> out.append(Component.literal("\n" + command).withStyle(s -> s.withColor(ChatFormatting.AQUA).withBold(false)
+				.withClickEvent(new ClickEvent.SuggestCommand(command.replaceAll(" [<\\[].*", " ")))))
+			.append(Component.literal(" – " + t.get("command.help." + key)).withStyle(ChatFormatting.RESET)));
+		out.append(Component.literal("\n" + t.get("command.help.quotes")).withStyle(s -> s.withColor(ChatFormatting.GRAY).withBold(false)));
+		return reply(ctx, out);
 	}
 
 	private static PlotRuntime runtime() {

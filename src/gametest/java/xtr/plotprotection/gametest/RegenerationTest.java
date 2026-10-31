@@ -78,6 +78,21 @@ public class RegenerationTest {
 	}
 
 	@GameTest
+	public void restoreTimeFollowsGameTicks(GameTestHelper helper) {
+		regenerativePlot(helper);
+		var runtime = PlotProtectionMod.runtime();
+		helper.setBlock(INSIDE, Blocks.STONE);
+		long before = runtime.gameTime();
+		helper.makeMockServerPlayerInLevel().gameMode.destroyBlock(helper.absolutePos(INSIDE));
+		var pos = MarkerHandler.position(helper.absolutePos(INSIDE));
+		long restoreAt = runtime.data().regeneration().stream().filter(e -> e.position().equals(pos)).findFirst().orElseThrow().restoreAt();
+		var config = runtime.config();
+		helper.assertTrue(restoreAt >= before + config.regenerationDelaySeconds() * 20
+			&& restoreAt <= runtime.gameTime() + (config.regenerationDelaySeconds() + config.regenerationSpreadSeconds()) * 20, "restore time in game ticks");
+		helper.succeed();
+	}
+
+	@GameTest
 	public void placedBlockIsRemovedAgain(GameTestHelper helper) {
 		regenerativePlot(helper);
 		ServerPlayer stranger = helper.makeMockServerPlayerInLevel();

@@ -1,6 +1,7 @@
 package xtr.plotprotection;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,11 +20,13 @@ import xtr.plotprotection.persistence.WorldDataStore;
 public final class PlotRuntime {
 	private final MinecraftServer server;
 	private final WorldDataStore store;
-	private final PlotConfig config;
+	private final Path configFile;
+	private volatile PlotConfig config;
 
-	PlotRuntime(MinecraftServer server, WorldDataStore store, PlotConfig config) {
+	PlotRuntime(MinecraftServer server, WorldDataStore store, Path configFile, PlotConfig config) {
 		this.server = server;
 		this.store = store;
+		this.configFile = configFile;
 		this.config = config;
 	}
 
@@ -33,6 +36,25 @@ public final class PlotRuntime {
 
 	public PlotConfig config() {
 		return config;
+	}
+
+	/** Writes the config file first, so a running server never uses values that would be lost on restart. */
+	public void updateConfig(PlotConfig next) {
+		if (!next.isValid()) {
+			throw new PlotException("error.invalid_data", next.toString());
+		}
+		try {
+			next.save(configFile);
+		} catch (IOException e) {
+			PlotProtectionMod.LOGGER.error("Could not save config {}; the change was rejected", configFile, e);
+			throw new PlotException("error.save_failed");
+		}
+		config = next;
+	}
+
+	/** Persisted with the world and follows /tick rate, sprint and freeze, unlike the wall clock. */
+	public long gameTime() {
+		return server.overworld().getGameTime();
 	}
 
 	public WorldData data() {

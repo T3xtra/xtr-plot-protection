@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.random.RandomGenerator;
+import java.util.stream.LongStream;
 
 /** Pure bookkeeping of regeneration entries; the world access lives in the Minecraft layer. */
 public final class Regeneration {
@@ -28,6 +30,14 @@ public final class Regeneration {
 			}
 		}
 		return changed ? data.withRegeneration(entries) : data;
+	}
+
+	/**
+	 * Random, ascending restore times within {@code [earliest, earliest + spreadMillis]}. Callers assign them to blocks
+	 * ordered bottom-up, so supporting blocks return before the blocks resting on them (sand, torches, plants).
+	 */
+	public static long[] restoreTimes(int count, long earliest, long spreadMillis, RandomGenerator random) {
+		return LongStream.generate(() -> earliest + (spreadMillis == 0 ? 0 : random.nextLong(spreadMillis + 1))).limit(count).sorted().toArray();
 	}
 
 	public static boolean isPending(WorldData data, String dimension, BlockPosition position) {

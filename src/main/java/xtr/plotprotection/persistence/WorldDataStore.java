@@ -34,6 +34,11 @@ public final class WorldDataStore {
 		v1 -> {
 			v1.add("regeneration", new JsonArray());
 			return v1;
+		},
+		// restoreAt changed from epoch millis to game ticks; the old values cannot be mapped, so pending blocks restore right away
+		v2 -> {
+			v2.getAsJsonArray("regeneration").forEach(entry -> entry.getAsJsonObject().addProperty("restoreAt", 0));
+			return v2;
 		}
 	);
 	public static final int SCHEMA_VERSION = MIGRATIONS.size() + 1;

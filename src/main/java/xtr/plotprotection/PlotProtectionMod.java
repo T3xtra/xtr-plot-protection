@@ -101,9 +101,10 @@ public class PlotProtectionMod implements ModInitializer {
 
 	private static void load(MinecraftServer server) {
 		try {
-			var config = PlotConfig.load(FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json"));
+			var configFile = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json");
+			var config = PlotConfig.load(configFile);
 			var store = WorldDataStore.open(server.getWorldPath(LevelResource.ROOT).resolve(MOD_ID), config.backupCount());
-			runtime = new PlotRuntime(server, store, config);
+			runtime = new PlotRuntime(server, store, configFile, config);
 			runtime.commit(Regeneration.reopenRestored(runtime.data()));
 		} catch (IOException | RuntimeException e) {
 			throw new IllegalStateException("Plot protection data could not be loaded; aborting start to protect existing data", e);
